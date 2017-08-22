@@ -2,7 +2,9 @@
 title: "Boxplot With Points And Lines Using Ggplot2 Package"
 author: Davit Sargsyan
 date: 08/12/2017
-output: html_notebook
+output: 
+  html_notebook:
+    toc: true
 ---
 
 ### References
