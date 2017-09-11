@@ -21,6 +21,7 @@ Create a dataset with 1000 gene counts (rows) in 100 samples (columns)
 require(data.table)
 require(DESeq2)
 require(BiocParallel)
+require(glmmADMB)
 
 set.seed(1000)
 
@@ -206,4 +207,44 @@ data.table(do.call("cbind",
                    resAvsBtime2@listData))
 data.table(do.call("cbind", 
                    resAvsBtime2.mix@listData))
+```
+
+
+```{r glmmADMB, echo=TRUE, fig.height=5, fig.width=10, message=FALSE, warning=FALSE}
+# Merge counts with grouping
+dt.l <- data.table(grp, t(dt1))
+colnames(dt.l)[5:ncol(dt.l)] <- rownames(dt1)
+
+# Melt data table
+dt.l <- melt.data.table(data = dt.l,
+                        id.vars = colnames(grp),
+                        measure.vars = 5:ncol(dt.l),
+                        variable.name = "gene",
+                        value.name = "count")
+
+# Model
+tmp <- droplevels(subset(dt.l,
+              dt.l$gene == "Gene1"))
+
+out <- list()
+for (i in 1:nlevels(dt2.KO$otu)) {
+  # Subset the data to i-th OTU
+  tmp.i <- droplevels(subset(dt2.KO,
+                             otu == levels(otu)[i]))
+  
+  # Try building the model
+  res <- try({
+    out[[i]] <- glmmadmb(Count ~ Treatment*Week + (Treatment | MouseID) + offset(sample.gmean),
+                    family = "nbinom",
+                    save.dir = "tmp/glmmadmb_out",
+                    # zeroInflation = TRUE,
+                    data = tmp.i)
+  })
+  if (class(res)[1] == "try-error") {          
+    out[[i]] <- NA
+  }
+  print(paste("Processing OTU", i, "..."))
+}
+names(out) <- levels(dt2.KO$otu)
+out
 ```

@@ -1,0 +1,84 @@
+# |------------------------------------------|
+# | Project: ???                             |
+# | Authors: David Cheng                     |
+# | Created: 07/25/2017                      |
+# |------------------------------------------|
+#********************************************************************
+# Create constants
+# 1. Bismark
+BM="/home/administrator/Documents/Bismark/bismark"
+
+# 2. Gene reference files
+GENE_REF="/home/administrator/Documents/mm9.2_for_bismark"
+
+# 3. Home directory
+HOME_DIR="/home/administrator/Documents/David_MethylSeq"
+
+# Change working directory
+cd $HOME_DIR"FastQ_Files"
+ls
+
+# Step0: Quality control of FastQ files with Fast QC 
+fastqc \
+--extract \
+--outdir=$HOME_DIR"FastQC" \
+*.gz
+
+# Step1: Allign all FastQ files in the the directory
+$BM \
+--parallel 4 \
+--output_dir $HOME_DIR"BAM_Files" \
+$GENE_REF \
+*.gz
+
+# NOTE (DS, 07/29/2017): Sample FX-1uM_S6_R1_001 failed to converge in the loop.
+#                        Run again separately, sigle thread process.
+# DS, 08/10/2017: ran the code below:
+$BM \
+--output_dir $HOME_DIR"BAM_Files" \
+$GENE_REF \
+FX-1uM_S6_R1_001.fastq.gz
+
+# |---------------------------------------------------------------------------|
+# | NOTE: the .bam files will be created in the FastQ_Files directory.        |
+# | Move them to BAM_Files directory. Place copies of Python code there also. |
+# |---------------------------------------------------------------------------|
+
+#Step 2: Sort and Index
+cd $HOME_DIR"BAM_Files"
+
+find *.bam -exec samtools sort {} {} \; 
+
+# NOTE: deleted all unsorted BAM files; 
+# the remaining files have ".bam.bam" extention
+
+find *.bam -exec samtools index {} \;
+
+
+# WHY THIS IS NOT WORKING? find *.bam -exec samtools -f sort {} {} \;
+
+# View the BAM+BAI files in IGV
+
+# Step 3: Extract methylated/unmethylated counts from alignment files
+cd $HOME_DIR"BAM_Files"
+samtools view -h *.bam | \
+python extract_CpG_data.py -i - -o *.cov"
+
+# Step 4: Cluster CpG sites into regions
+python combine_CpG_sites.py -o combined.csv \
+DM1.cov \
+DM2.cov \
+DM3.cov \
+DM4.cov \
+DM5.cov \
+DM6.cov \
+DM7.cov \
+DM8.cov \
+DM9.cov \
+DM10.cov
+
+# Step 5: Run DMRfinder.r 
+Rscript findDMRs.r -i combined.csv \
+-o results_all.csv \
+-n 16wControl,16wDiabetes,21wControl,21wDiabetes \
+DM1,DM2 DM3,DM4 DM5,DM6,DM7 DM8,DM9,DM10
