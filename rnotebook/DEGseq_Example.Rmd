@@ -1,0 +1,87 @@
+---
+title: "Boxplot With Points And Lines Using Ggplot2 Package"
+author: Davit Sargsyan
+date: 02/22/2018
+output: 
+  html_notebook:
+    toc: true
+---
+
+### References
+1. [DEGseq: an R package for identifying differentially expressed
+genes from RNA-seq data, Wang et al, 2009](https://www.ncbi.nlm.nih.gov/pubmed/19855105)
+
+```{r Data, echo=TRUE, fig.height=5, fig.width=5, message=FALSE, warning=FALSE}
+# Header----
+require(data.table)
+require(ggplot2)
+require(DEGseq)
+require(knitr)
+
+# DEGset Example-----
+# Read files
+geneExpFile <- system.file("extdata", 
+                           "GeneExpExample5000.txt",
+                           package="DEGseq")
+geneExpMatrix1 <- readGeneExp(file = geneExpFile,
+                              geneCol = 1, 
+                              valCol = c(7,9,12,15,18))
+geneExpMatrix2 <- readGeneExp(file = geneExpFile, 
+                              geneCol = 1,
+                              valCol = c(8,10,11,13,16))
+head(geneExpMatrix1)
+head(geneExpMatrix2)
+
+# Compare treatments with replicates
+DEGexp(geneExpMatrix1 = geneExpMatrix1,
+       expCol1 = 2,
+       groupLabel1 = "kidneyR1L1", 
+       geneExpMatrix2 = geneExpMatrix2, 
+       expCol2 = 2, 
+       groupLabel2 = "liverR1L2",
+       replicateExpMatrix1 = geneExpMatrix1,
+       expColR1 = 3, 
+       replicateLabel1 = "kidneyR1L3", 
+       replicateExpMatrix2 = geneExpMatrix1,
+       expColR2 = 4,
+       replicateLabel2 = "kidneyR1L7",
+       method = "MATR", 
+       outputDir = "tmp")
+
+# Compare two samples: R1L1Kidney & R1L3Kidney
+geneExpMatrix1 <- readGeneExp(file = geneExpFile,
+                              geneCol = 1, 
+                              valCol = c(7))
+geneExpMatrix2 <- readGeneExp(file = geneExpFile, 
+                              geneCol = 1, 
+                              valCol = c(9))
+head(geneExpMatrix1)
+head(geneExpMatrix2)
+
+DEGexp(geneExpMatrix1 = geneExpMatrix1,
+       expCol1 =2,
+       groupLabel1 = "kidneyR1L1", 
+       geneExpMatrix2 = geneExpMatrix2, 
+       expCol2 = 2,
+       groupLabel2 = "liverR1L2",
+       method = "CTR",
+       outputDir = "tmp")
+
+# Calculate differences and q-values etc.----
+DEGexp2(geneExpFile1 = geneExpFile, 
+        geneCol1 = 1, 
+        expCol1 = 7, 
+        groupLabel1="R1L1Kidney",
+        geneExpFile2 = geneExpFile, 
+        geneCol2 = 1, 
+        expCol2 = 9,
+        groupLabel2 = "R1L3Kidney",
+        outputDir = "C:/git_local/mes13/tmp")
+
+# Read in the output file----
+dt1 <- fread("tmp/output_score.txt")
+dt1
+
+# Clean all----
+rm(list = ls())
+```
